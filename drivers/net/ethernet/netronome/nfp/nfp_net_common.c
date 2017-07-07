@@ -1572,26 +1572,6 @@ nfp_net_tx_xdp_buf(struct nfp_net_dp *dp, struct nfp_net_rx_ring *rx_ring,
 	return true;
 }
 
-static int nfp_net_run_xdp(struct bpf_prog *prog, void *data, void *hard_start,
-			   unsigned int *off, unsigned int *len)
-{
-	struct xdp_buff xdp;
-	void *orig_data;
-	int ret;
-
-	xdp.data_hard_start = hard_start;
-	xdp.data = data + *off;
-	xdp.data_end = data + *off + *len;
-
-	orig_data = xdp.data;
-	ret = bpf_prog_run_xdp(prog, &xdp);
-
-	*len -= xdp.data - orig_data;
-	*off += xdp.data - orig_data;
-
-	return ret;
-}
-
 /**
  * nfp_net_rx() - receive up to @budget packets on @rx_ring
  * @rx_ring:   RX ring to receive from
@@ -1627,6 +1607,7 @@ static int nfp_net_rx(struct nfp_net_rx_ring *rx_ring, int budget)
 		struct nfp_meta_parsed meta;
 		struct net_device *netdev;
 		dma_addr_t new_dma_addr;
+		bool xdp_running;
 		void *new_frag;
 
 		idx = D_IDX(rx_ring, rx_ring->rd_p);
@@ -1703,18 +1684,29 @@ static int nfp_net_rx(struct nfp_net_rx_ring *rx_ring, int budget)
 			}
 		}
 
-		if (xdp_prog && !(rxd->rxd.flags & PCIE_DESC_RX_BPF &&
-				  dp->bpf_offload_xdp) && !meta.portid) {
+		xdp_running = xdp_prog && !(rxd->rxd.flags & PCIE_DESC_RX_BPF &&
+					    dp->bpf_offload_xdp) && !meta.portid;
+		if (xdp_running) {
+			void *orig_data = rxbuf->frag + pkt_off;
 			unsigned int dma_off;
-			void *hard_start;
+			struct xdp_buff xdp;
 			int act;
 
-			hard_start = rxbuf->frag + NFP_NET_RX_BUF_HEADROOM;
+			xdp.data_hard_start = rxbuf->frag + NFP_NET_RX_BUF_HEADROOM;
+			xdp.data = xdp.meta = orig_data;
+			xdp.data_end = orig_data + pkt_len;
+			xdp.meta_to_mark = false;
 
-			act = nfp_net_run_xdp(xdp_prog, rxbuf->frag, hard_start,
-					      &pkt_off, &pkt_len);
+			act = bpf_prog_run_xdp(xdp_prog, &xdp);
+
+			pkt_len -= xdp.data - orig_data;
+			pkt_off += xdp.data - orig_data;
+
 			switch (act) {
 			case XDP_PASS:
+				meta_len = xdp.data - xdp.meta;
+				if (xdp.meta_to_mark)
+					meta.mark = *(u32 *)xdp.meta;
 				break;
 			case XDP_TX:
 				dma_off = pkt_off - NFP_NET_RX_BUF_HEADROOM;
@@ -1770,8 +1762,9 @@ static int nfp_net_rx(struct nfp_net_rx_ring *rx_ring, int budget)
 
 		skb_reserve(skb, pkt_off);
 		skb_put(skb, pkt_len);
-
-		skb->mark = meta.mark;
+		if (xdp_running)
+			skb_set_meta_prepend(skb, meta_len);
+		skb_set_mark(skb, meta.mark);
 		skb_set_hash(skb, meta.hash, meta.hash_type);
 
 		skb_record_rx_queue(skb, rx_ring->idx);

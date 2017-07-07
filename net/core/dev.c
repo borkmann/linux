@@ -4638,6 +4638,7 @@ static void gro_list_prepare(struct napi_struct *napi, struct sk_buff *skb)
 {
 	struct sk_buff *p;
 	unsigned int maclen = skb->dev->hard_header_len;
+	u8 meta_len = skb_meta_prepend(skb);
 	u32 hash = skb_get_hash_raw(skb);
 
 	for (p = napi->gro_list; p; p = p->next) {
@@ -4645,7 +4646,8 @@ static void gro_list_prepare(struct napi_struct *napi, struct sk_buff *skb)
 
 		NAPI_GRO_CB(p)->flush = 0;
 
-		if (hash != skb_get_hash_raw(p)) {
+		if ((hash ^ skb_get_hash_raw(p)) | (skb->mark ^ p->mark) |
+		    (meta_len ^ skb_meta_prepend(p))) {
 			NAPI_GRO_CB(p)->same_flow = 0;
 			continue;
 		}
@@ -4653,6 +4655,8 @@ static void gro_list_prepare(struct napi_struct *napi, struct sk_buff *skb)
 		diffs = (unsigned long)p->dev ^ (unsigned long)skb->dev;
 		diffs |= p->vlan_tci ^ skb->vlan_tci;
 		diffs |= skb_metadata_dst_cmp(p, skb);
+		if (meta_len)
+			diffs |= skb_metadata_xdp_cmp(p, skb);
 		if (maclen == ETH_HLEN)
 			diffs |= compare_ether_header(skb_mac_header(p),
 						      skb_mac_header(skb));

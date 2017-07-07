@@ -191,6 +191,7 @@ static const char * const reg_type_str[] = {
 	[CONST_IMM]		= "imm",
 	[PTR_TO_PACKET]		= "pkt",
 	[PTR_TO_PACKET_END]	= "pkt_end",
+	[PTR_TO_PACKET_META]	= "pkt_meta",
 };
 
 #define __BPF_FUNC_STR_FN(x) [BPF_FUNC_ ## x] = __stringify(bpf_ ## x)
@@ -223,7 +224,7 @@ static void print_verifier_state(struct bpf_verifier_state *state)
 		verbose(" R%d=%s", i, reg_type_str[t]);
 		if (t == CONST_IMM || t == PTR_TO_STACK)
 			verbose("%lld", reg->imm);
-		else if (t == PTR_TO_PACKET)
+		else if (t == PTR_TO_PACKET || t == PTR_TO_PACKET_META)
 			verbose("(id=%d,off=%d,r=%d)",
 				reg->id, reg->off, reg->range);
 		else if (t == UNKNOWN_VALUE && reg->imm)
@@ -556,6 +557,7 @@ static bool is_spillable_regtype(enum bpf_reg_type type)
 	case PTR_TO_CTX:
 	case PTR_TO_PACKET:
 	case PTR_TO_PACKET_END:
+	case PTR_TO_PACKET_META:
 	case FRAME_PTR:
 	case CONST_PTR_TO_MAP:
 		return true;
@@ -848,6 +850,7 @@ static int check_ptr_alignment(struct bpf_verifier_env *env,
 
 	switch (reg->type) {
 	case PTR_TO_PACKET:
+	case PTR_TO_PACKET_META:
 		return check_pkt_ptr_alignment(reg, off, size, strict);
 	case PTR_TO_MAP_VALUE_ADJ:
 		return check_val_ptr_alignment(reg, size, strict);
@@ -941,7 +944,8 @@ static int check_mem_access(struct bpf_verifier_env *env, int insn_idx, u32 regn
 		} else {
 			err = check_stack_read(state, off, size, value_regno);
 		}
-	} else if (state->regs[regno].type == PTR_TO_PACKET) {
+	} else if (state->regs[regno].type == PTR_TO_PACKET ||
+		   state->regs[regno].type == PTR_TO_PACKET_META) {
 		if (t == BPF_WRITE && !may_access_direct_pkt_data(env, NULL, t)) {
 			verbose("cannot write into packet\n");
 			return -EACCES;
@@ -1068,6 +1072,7 @@ static int check_helper_mem_access(struct bpf_verifier_env *env, int regno,
 
 	switch (regs[regno].type) {
 	case PTR_TO_PACKET:
+	case PTR_TO_PACKET_META:
 		return check_packet_access(env, regno, 0, access_size);
 	case PTR_TO_MAP_VALUE:
 		return check_map_access(env, regno, 0, access_size);
@@ -1103,7 +1108,7 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 		return 0;
 	}
 
-	if (type == PTR_TO_PACKET &&
+	if ((type == PTR_TO_PACKET || type == PTR_TO_PACKET_META) &&
 	    !may_access_direct_pkt_data(env, meta, BPF_READ)) {
 		verbose("helper access to the packet is not allowed\n");
 		return -EACCES;
@@ -1112,7 +1117,8 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 	if (arg_type == ARG_PTR_TO_MAP_KEY ||
 	    arg_type == ARG_PTR_TO_MAP_VALUE) {
 		expected_type = PTR_TO_STACK;
-		if (type != PTR_TO_PACKET && type != expected_type)
+		if (type != PTR_TO_PACKET && type != PTR_TO_PACKET_META &&
+		    type != expected_type)
 			goto err_type;
 	} else if (arg_type == ARG_CONST_SIZE ||
 		   arg_type == ARG_CONST_SIZE_OR_ZERO) {
@@ -1139,8 +1145,9 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 		 */
 		if (type == CONST_IMM && reg->imm == 0)
 			/* final test in check_stack_boundary() */;
-		else if (type != PTR_TO_PACKET && type != PTR_TO_MAP_VALUE &&
-			 type != PTR_TO_MAP_VALUE_ADJ && type != expected_type)
+		else if (type != PTR_TO_PACKET && type != PTR_TO_PACKET_META &&
+			 type != PTR_TO_MAP_VALUE && type != PTR_TO_MAP_VALUE_ADJ &&
+			 type != expected_type)
 			goto err_type;
 		meta->raw_mode = arg_type == ARG_PTR_TO_UNINIT_MEM;
 	} else {
@@ -1165,7 +1172,7 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 			verbose("invalid map_ptr to access map->key\n");
 			return -EACCES;
 		}
-		if (type == PTR_TO_PACKET)
+		if (type == PTR_TO_PACKET || type == PTR_TO_PACKET_META)
 			err = check_packet_access(env, regno, 0,
 						  meta->map_ptr->key_size);
 		else
@@ -1181,7 +1188,7 @@ static int check_func_arg(struct bpf_verifier_env *env, u32 regno,
 			verbose("invalid map_ptr to access map->value\n");
 			return -EACCES;
 		}
-		if (type == PTR_TO_PACKET)
+		if (type == PTR_TO_PACKET || type == PTR_TO_PACKET_META)
 			err = check_packet_access(env, regno, 0,
 						  meta->map_ptr->value_size);
 		else
@@ -1341,7 +1348,8 @@ static void clear_all_pkt_pointers(struct bpf_verifier_env *env)
 
 	for (i = 0; i < MAX_BPF_REG; i++)
 		if (regs[i].type == PTR_TO_PACKET ||
-		    regs[i].type == PTR_TO_PACKET_END)
+		    regs[i].type == PTR_TO_PACKET_END ||
+		    regs[i].type == PTR_TO_PACKET_META)
 			mark_reg_unknown_value(regs, i);
 
 	for (i = 0; i < MAX_BPF_STACK; i += BPF_REG_SIZE) {
@@ -1349,7 +1357,8 @@ static void clear_all_pkt_pointers(struct bpf_verifier_env *env)
 			continue;
 		reg = &state->spilled_regs[i / BPF_REG_SIZE];
 		if (reg->type != PTR_TO_PACKET &&
-		    reg->type != PTR_TO_PACKET_END)
+		    reg->type != PTR_TO_PACKET_END &&
+		    reg->type != PTR_TO_PACKET_META)
 			continue;
 		__mark_reg_unknown_value(state->spilled_regs,
 					 i / BPF_REG_SIZE);
@@ -1501,7 +1510,8 @@ add_imm:
 	} else {
 		bool had_id;
 
-		if (src_reg->type == PTR_TO_PACKET) {
+		if (src_reg->type == PTR_TO_PACKET ||
+		    src_reg->type == PTR_TO_PACKET_META) {
 			/* R6=pkt(id=0,off=0,r=62) R7=imm22; r7 += r6 */
 			tmp_reg = *dst_reg;  /* save r7 state */
 			*dst_reg = *src_reg; /* copy pkt_ptr state r6 into r7 */
@@ -2098,8 +2108,10 @@ static int check_alu_op(struct bpf_verifier_env *env, struct bpf_insn *insn)
 		} else if (opcode == BPF_ADD &&
 			   BPF_CLASS(insn->code) == BPF_ALU64 &&
 			   (dst_reg->type == PTR_TO_PACKET ||
+			    dst_reg->type == PTR_TO_PACKET_META ||
 			    (BPF_SRC(insn->code) == BPF_X &&
-			     regs[insn->src_reg].type == PTR_TO_PACKET))) {
+			     (regs[insn->src_reg].type == PTR_TO_PACKET ||
+			      regs[insn->src_reg].type == PTR_TO_PACKET_META)))) {
 			/* ptr_to_packet += K|X */
 			return check_packet_ptr_add(env, insn);
 		} else if (BPF_CLASS(insn->code) == BPF_ALU64 &&
@@ -2141,7 +2153,8 @@ static int check_alu_op(struct bpf_verifier_env *env, struct bpf_insn *insn)
 }
 
 static void find_good_pkt_pointers(struct bpf_verifier_state *state,
-				   struct bpf_reg_state *dst_reg)
+				   struct bpf_reg_state *dst_reg,
+				   enum bpf_reg_type type)
 {
 	struct bpf_reg_state *regs = state->regs, *reg;
 	int i;
@@ -2177,7 +2190,7 @@ static void find_good_pkt_pointers(struct bpf_verifier_state *state,
 	 */
 
 	for (i = 0; i < MAX_BPF_REG; i++)
-		if (regs[i].type == PTR_TO_PACKET && regs[i].id == dst_reg->id)
+		if (regs[i].type == type && regs[i].id == dst_reg->id)
 			/* keep the maximum range already checked */
 			regs[i].range = max(regs[i].range, dst_reg->off);
 
@@ -2185,7 +2198,7 @@ static void find_good_pkt_pointers(struct bpf_verifier_state *state,
 		if (state->stack_slot_type[i] != STACK_SPILL)
 			continue;
 		reg = &state->spilled_regs[i / BPF_REG_SIZE];
-		if (reg->type == PTR_TO_PACKET && reg->id == dst_reg->id)
+		if (reg->type == type && reg->id == dst_reg->id)
 			reg->range = max(reg->range, dst_reg->off);
 	}
 }
@@ -2431,11 +2444,21 @@ static int check_cond_jmp_op(struct bpf_verifier_env *env,
 	} else if (BPF_SRC(insn->code) == BPF_X && opcode == BPF_JGT &&
 		   dst_reg->type == PTR_TO_PACKET &&
 		   regs[insn->src_reg].type == PTR_TO_PACKET_END) {
-		find_good_pkt_pointers(this_branch, dst_reg);
+		find_good_pkt_pointers(this_branch, dst_reg, PTR_TO_PACKET);
 	} else if (BPF_SRC(insn->code) == BPF_X && opcode == BPF_JGE &&
 		   dst_reg->type == PTR_TO_PACKET_END &&
 		   regs[insn->src_reg].type == PTR_TO_PACKET) {
-		find_good_pkt_pointers(other_branch, &regs[insn->src_reg]);
+		find_good_pkt_pointers(other_branch, &regs[insn->src_reg],
+				       PTR_TO_PACKET);
+	} else if (BPF_SRC(insn->code) == BPF_X && opcode == BPF_JGT &&				/// XXX here, it must be if 0 and off 0.
+		   dst_reg->type == PTR_TO_PACKET_META &&
+		   regs[insn->src_reg].type == PTR_TO_PACKET) {
+		find_good_pkt_pointers(this_branch, dst_reg, PTR_TO_PACKET_META);
+	} else if (BPF_SRC(insn->code) == BPF_X && opcode == BPF_JGE &&
+		   dst_reg->type == PTR_TO_PACKET &&
+		   regs[insn->src_reg].type == PTR_TO_PACKET_META) {
+		find_good_pkt_pointers(other_branch, &regs[insn->src_reg],
+				       PTR_TO_PACKET_META);
 	} else if (is_pointer_value(env, insn->dst_reg)) {
 		verbose("R%d pointer comparison prohibited\n", insn->dst_reg);
 		return -EACCES;
@@ -2878,7 +2901,8 @@ static bool states_equal(struct bpf_verifier_env *env,
 		    rold->map_ptr == rcur->map_ptr)
 			continue;
 
-		if (rold->type == PTR_TO_PACKET && rcur->type == PTR_TO_PACKET &&
+		if (((rold->type == PTR_TO_PACKET && rcur->type == PTR_TO_PACKET) ||
+		     (rold->type == PTR_TO_PACKET_META && rcur->type == PTR_TO_PACKET_META)) &&
 		    compare_ptrs_to_packet(env, rold, rcur))
 			continue;
 

@@ -415,7 +415,8 @@ struct ubuf_info {
  * the end of the header data, ie. at skb->end.
  */
 struct skb_shared_info {
-	unsigned short	_unused;
+	__u8		meta_prepend;
+	__u8		_unused;
 	unsigned char	nr_frags;
 	__u8		tx_flags;
 	unsigned short	gso_size;
@@ -1003,6 +1004,11 @@ void skb_abort_seq_read(struct skb_seq_state *st);
 unsigned int skb_find_text(struct sk_buff *skb, unsigned int from,
 			   unsigned int to, struct ts_config *config);
 
+static inline void skb_set_mark(struct sk_buff *skb, __u32 mark)
+{
+	skb->mark = mark;
+}
+
 /*
  * Packet hash types specify the type of hash in skb_set_hash.
  *
@@ -1199,6 +1205,21 @@ static inline unsigned int skb_end_offset(const struct sk_buff *skb)
 static inline struct skb_shared_hwtstamps *skb_hwtstamps(struct sk_buff *skb)
 {
 	return &skb_shinfo(skb)->hwtstamps;
+}
+
+static inline u8 skb_meta_prepend(const struct sk_buff *skb)
+{
+	return skb_shinfo(skb)->meta_prepend;
+}
+
+static inline void skb_set_meta_prepend(struct sk_buff *skb, u8 meta_len)
+{
+	skb_shinfo(skb)->meta_prepend = meta_len;
+}
+
+static inline void skb_clear_meta_prepend(struct sk_buff *skb)
+{
+	skb_set_meta_prepend(skb, 0);
 }
 
 /**

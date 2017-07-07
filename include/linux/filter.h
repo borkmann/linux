@@ -490,6 +490,7 @@ struct sk_filter {
 
 struct bpf_skb_data_end {
 	struct qdisc_skb_cb qdisc_cb;
+	void *meta;
 	void *data_end;
 };
 
@@ -497,16 +498,20 @@ struct xdp_buff {
 	void *data;
 	void *data_end;
 	void *data_hard_start;
+	void *meta;
+	bool  meta_to_mark;
 };
 
-/* compute the linear packet data range [data, data_end) which
- * will be accessed by cls_bpf, act_bpf and lwt programs
+/* Compute the meta pointer as well as the linear packet data range
+ * [data, data_end) which will be accessed by cls_bpf, act_bpf and
+ * lwt programs.
  */
-static inline void bpf_compute_data_end(struct sk_buff *skb)
+static inline void bpf_compute_data_pointers(struct sk_buff *skb)
 {
 	struct bpf_skb_data_end *cb = (struct bpf_skb_data_end *)skb->cb;
 
 	BUILD_BUG_ON(sizeof(*cb) > FIELD_SIZEOF(struct sk_buff, cb));
+	cb->meta     = skb->data - skb_shinfo(skb)->meta_prepend;
 	cb->data_end = skb->data + skb_headlen(skb);
 }
 
@@ -705,6 +710,41 @@ int sk_get_filter(struct sock *sk, struct sock_filter __user *filter,
 
 bool sk_filter_charge(struct sock *sk, struct sk_filter *fp);
 void sk_filter_uncharge(struct sock *sk, struct sk_filter *fp);
+
+static __always_inline void *skb_metadata_end(const struct sk_buff *skb)
+{
+	return skb_mac_header(skb);
+}
+
+static inline int skb_metadata_xdp_cmp(const struct sk_buff *skb_a,
+				       const struct sk_buff *skb_b)
+{
+	/* Caller ensured that both have the same meta data length. */
+	const void *a = skb_metadata_end(skb_a);
+	const void *b = skb_metadata_end(skb_b);
+	u8 meta_len = skb_meta_prepend(skb_a);
+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS) && BITS_PER_LONG == 64
+	u64 diffs = 0;
+
+	switch (meta_len) {
+#define __it(x, op) (x -= sizeof(__u##op))
+#define __it_diff(a, b, op) (*(__u##op *)__it(a, op)) ^ (*(__u##op *)__it(b, op))
+	case 32: diffs |= __it_diff(a, b, 64);
+	case 24: diffs |= __it_diff(a, b, 64);
+	case 16: diffs |= __it_diff(a, b, 64);
+	case  8: diffs |= __it_diff(a, b, 64);
+		 break;
+	case 28: diffs |= __it_diff(a, b, 64);
+	case 20: diffs |= __it_diff(a, b, 64);
+	case 12: diffs |= __it_diff(a, b, 64);
+	case  4: diffs |= __it_diff(a, b, 32);
+		 break;
+	}
+	return diffs;
+#else
+	return memcmp(a - meta_len, b - meta_len, meta_len);
+#endif
+}
 
 u64 __bpf_call_base(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
 
