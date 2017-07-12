@@ -2116,7 +2116,7 @@ static void ixgbe_put_rx_buffer(struct ixgbe_ring *rx_ring,
 
 static struct sk_buff *ixgbe_construct_skb(struct ixgbe_ring *rx_ring,
 					   struct ixgbe_rx_buffer *rx_buffer,
-					   struct xdp_buff *xdp,
+					   const struct xdp_buff *xdp,
 					   union ixgbe_adv_rx_desc *rx_desc)
 {
 	unsigned int size = xdp->data_end - xdp->data;
@@ -2126,6 +2126,7 @@ static struct sk_buff *ixgbe_construct_skb(struct ixgbe_ring *rx_ring,
 	unsigned int truesize = SKB_DATA_ALIGN(xdp->data_end -
 					       xdp->data_hard_start);
 #endif
+	unsigned int meta_len = xdp->data - xdp->meta;
 	struct sk_buff *skb;
 
 	/* prefetch first cache line of first page */
@@ -2156,13 +2157,16 @@ static struct sk_buff *ixgbe_construct_skb(struct ixgbe_ring *rx_ring,
 		       xdp->data, ALIGN(size, sizeof(long)));
 		rx_buffer->pagecnt_bias++;
 	}
+	skb_set_meta_prepend(skb, meta_len);
+	if (xdp->meta_to_mark)
+		skb_set_mark(skb, *(u32 *)xdp->meta);
 
 	return skb;
 }
 
 static struct sk_buff *ixgbe_build_skb(struct ixgbe_ring *rx_ring,
 				       struct ixgbe_rx_buffer *rx_buffer,
-				       struct xdp_buff *xdp,
+				       const struct xdp_buff *xdp,
 				       union ixgbe_adv_rx_desc *rx_desc)
 {
 #if (PAGE_SIZE < 8192)
@@ -2172,6 +2176,7 @@ static struct sk_buff *ixgbe_build_skb(struct ixgbe_ring *rx_ring,
 				SKB_DATA_ALIGN(xdp->data_end -
 					       xdp->data_hard_start);
 #endif
+	unsigned int meta_len = xdp->data - xdp->meta;
 	struct sk_buff *skb;
 
 	/* prefetch first cache line of first page */
@@ -2188,6 +2193,9 @@ static struct sk_buff *ixgbe_build_skb(struct ixgbe_ring *rx_ring,
 	/* update pointers within the skb to store the data */
 	skb_reserve(skb, xdp->data - xdp->data_hard_start);
 	__skb_put(skb, xdp->data_end - xdp->data);
+	skb_set_meta_prepend(skb, meta_len);
+	if (xdp->meta_to_mark)
+		skb_set_mark(skb, *(u32 *)xdp->meta);
 
 	/* record DMA address if this is the start of a chain of buffers */
 	if (!ixgbe_test_staterr(rx_desc, IXGBE_RXD_STAT_EOP))
@@ -2317,11 +2325,12 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
 
 		/* retrieve a buffer from the ring */
 		if (!skb) {
-			xdp.data = page_address(rx_buffer->page) +
+			xdp.data = xdp.meta = page_address(rx_buffer->page) +
 				   rx_buffer->page_offset;
 			xdp.data_hard_start = xdp.data -
 					      ixgbe_rx_offset(rx_ring);
 			xdp.data_end = xdp.data + size;
+			xdp.meta_to_mark = false;
 
 			skb = ixgbe_run_xdp(adapter, rx_ring, &xdp);
 		}
