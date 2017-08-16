@@ -3190,6 +3190,8 @@ xdp_func_proto(enum bpf_func_id func_id)
 		return &bpf_xdp_redirect_proto;
 	case BPF_FUNC_redirect_map:
 		return &bpf_redirect_map_proto;
+	case BPF_FUNC_csum_diff:
+		return &bpf_csum_diff_proto;
 	default:
 		return bpf_base_func_proto(func_id);
 	}
