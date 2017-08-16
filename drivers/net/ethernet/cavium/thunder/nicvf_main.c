@@ -19,7 +19,6 @@
 #include <linux/iommu.h>
 #include <linux/bpf.h>
 #include <linux/bpf_trace.h>
-#include <linux/filter.h>
 
 #include "nic_reg.h"
 #include "nic.h"

@@ -5,7 +5,7 @@
 #define _TRACE_XDP_H
 
 #include <linux/netdevice.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/tracepoint.h>
 
 #define __XDP_ACT_MAP(FN)	\

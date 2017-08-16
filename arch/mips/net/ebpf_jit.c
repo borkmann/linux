@@ -15,7 +15,6 @@
 
 #include <linux/bitops.h>
 #include <linux/errno.h>
-#include <linux/filter.h>
 #include <linux/bpf.h>
 #include <linux/slab.h>
 #include <asm/bitops.h>
@@ -303,7 +302,7 @@ static int gen_int_prologue(struct jit_ctx *ctx)
 	 * On tail call we skip this instruction, and the TCC is
 	 * passed in $v1 from the caller.
 	 */
-	emit_instr(ctx, daddiu, MIPS_R_V1, MIPS_R_ZERO, MAX_TAIL_CALL_CNT);
+	emit_instr(ctx, daddiu, MIPS_R_V1, MIPS_R_ZERO, MAX_BPF_TAIL_CALL_CNT);
 	if (stack_adjust)
 		emit_instr(ctx, daddiu, MIPS_R_SP, MIPS_R_SP, -stack_adjust);
 	else

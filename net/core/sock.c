@@ -134,7 +134,7 @@
 #include <net/netprio_cgroup.h>
 #include <linux/sock_diag.h>
 
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <net/sock_reuseport.h>
 
 #include <trace/events/sock.h>

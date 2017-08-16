@@ -102,7 +102,7 @@
 #include <linux/usbdevice_fs.h>
 #include <linux/nbd.h>
 #include <linux/random.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 
 #include <linux/hiddev.h>
 

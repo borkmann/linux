@@ -1,7 +1,6 @@
 #include <linux/moduleloader.h>
 #include <linux/workqueue.h>
 #include <linux/netdevice.h>
-#include <linux/filter.h>
 #include <linux/bpf.h>
 #include <linux/cache.h>
 #include <linux/if_vlan.h>
@@ -892,7 +891,7 @@ static void emit_tail_call(struct jit_ctx *ctx)
 
 	off = BPF_TAILCALL_CNT_SP_OFF;
 	emit(LD32 | IMMED | RS1(SP) | S13(off) | RD(tmp), ctx);
-	emit_cmpi(tmp, MAX_TAIL_CALL_CNT, ctx);
+	emit_cmpi(tmp, MAX_BPF_TAIL_CALL_CNT, ctx);
 #define OFFSET2 13
 	emit_branch(BGU, ctx->idx, ctx->idx + OFFSET2, ctx);
 	emit_nop(ctx);

@@ -21,7 +21,6 @@
  * Kris Katterjohn - Added many additional checks in bpf_check_classic()
  */
 
-#include <linux/filter.h>
 #include <linux/skbuff.h>
 #include <linux/vmalloc.h>
 #include <linux/random.h>
@@ -1026,7 +1025,7 @@ select_insn:
 
 		if (unlikely(index >= array->map.max_entries))
 			goto out;
-		if (unlikely(tail_call_cnt > MAX_TAIL_CALL_CNT))
+		if (unlikely(tail_call_cnt > MAX_BPF_TAIL_CALL_CNT))
 			goto out;
 
 		tail_call_cnt++;

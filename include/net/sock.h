@@ -61,7 +61,7 @@
 #include <linux/wait.h>
 #include <linux/cgroup-defs.h>
 
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/rculist_nulls.h>
 #include <linux/poll.h>
 

@@ -43,7 +43,6 @@
 #include <linux/timer.h>
 #include <linux/uaccess.h>
 #include <asm/unaligned.h>
-#include <linux/filter.h>
 #include <linux/ratelimit.h>
 #include <linux/seccomp.h>
 #include <linux/if_vlan.h>

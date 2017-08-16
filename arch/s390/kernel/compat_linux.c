@@ -31,7 +31,7 @@
 #include <linux/poll.h>
 #include <linux/personality.h>
 #include <linux/stat.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/highmem.h>
 #include <linux/highuid.h>
 #include <linux/mman.h>

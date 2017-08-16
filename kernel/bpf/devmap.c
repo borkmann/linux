@@ -49,8 +49,8 @@
  */
 #include <linux/bpf.h>
 #include <linux/jhash.h>
-#include <linux/filter.h>
 #include <linux/rculist_nulls.h>
+
 #include "percpu_freelist.h"
 #include "bpf_lru_list.h"
 #include "map_in_map.h"

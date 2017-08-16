@@ -14,7 +14,6 @@
 #include <linux/moduleloader.h>
 #include <asm/cacheflush.h>
 #include <linux/netdevice.h>
-#include <linux/filter.h>
 #include <linux/if_vlan.h>
 #include <asm/kprobes.h>
 #include <linux/bpf.h>
@@ -249,11 +248,11 @@ static void bpf_jit_emit_tail_call(u32 *image, struct codegen_context *ctx, u32 
 	PPC_BCC(COND_GE, out);
 
 	/*
-	 * if (tail_call_cnt > MAX_TAIL_CALL_CNT)
+	 * if (tail_call_cnt > MAX_BPF_TAIL_CALL_CNT)
 	 *   goto out;
 	 */
 	PPC_LD(b2p[TMP_REG_1], 1, bpf_jit_stack_tailcallcnt(ctx));
-	PPC_CMPLWI(b2p[TMP_REG_1], MAX_TAIL_CALL_CNT);
+	PPC_CMPLWI(b2p[TMP_REG_1], MAX_BPF_TAIL_CALL_CNT);
 	PPC_BCC(COND_GT, out);
 
 	/*

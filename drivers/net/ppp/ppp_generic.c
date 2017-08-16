@@ -32,7 +32,7 @@
 #include <linux/netdevice.h>
 #include <linux/poll.h>
 #include <linux/ppp_defs.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/ppp-ioctl.h>
 #include <linux/ppp_channel.h>
 #include <linux/ppp-comp.h>

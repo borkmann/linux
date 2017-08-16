@@ -13,7 +13,7 @@
 #include <linux/moduleloader.h>
 #include <asm/cacheflush.h>
 #include <linux/netdevice.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/if_vlan.h>
 
 #include "bpf_jit32.h"

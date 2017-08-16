@@ -14,7 +14,6 @@
 #include <linux/if_vlan.h>
 #include <linux/bpf.h>
 #include <linux/bpf_trace.h>
-#include <linux/filter.h>
 #include "bnxt_hsi.h"
 #include "bnxt.h"
 #include "bnxt_xdp.h"

@@ -15,7 +15,7 @@
 #include <linux/times.h>
 #include <linux/poll.h>
 #include <linux/skbuff.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/shm.h>
 #include <linux/sem.h>
 #include <linux/msg.h>

@@ -19,7 +19,6 @@
 #include <linux/fs.h>
 #include <linux/kdev_t.h>
 #include <linux/parser.h>
-#include <linux/filter.h>
 #include <linux/bpf.h>
 #include <linux/bpf_trace.h>
 

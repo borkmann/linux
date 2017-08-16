@@ -23,7 +23,7 @@
 #include <linux/mm.h>
 #include <linux/ctype.h>
 #include <linux/slab.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/compiler.h>
 
 #include <asm/sections.h>

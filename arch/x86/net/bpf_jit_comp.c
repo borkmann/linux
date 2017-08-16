@@ -9,7 +9,6 @@
  * of the License.
  */
 #include <linux/netdevice.h>
-#include <linux/filter.h>
 #include <linux/if_vlan.h>
 #include <asm/cacheflush.h>
 #include <asm/set_memory.h>
@@ -262,7 +261,7 @@ static void emit_prologue(u8 **pprog, u32 stack_depth)
  * ... bpf_tail_call(void *ctx, struct bpf_array *array, u64 index) ...
  *   if (index >= array->map.max_entries)
  *     goto out;
- *   if (++tail_call_cnt > MAX_TAIL_CALL_CNT)
+ *   if (++tail_call_cnt > MAX_BPF_TAIL_CALL_CNT)
  *     goto out;
  *   prog = array->ptrs[index];
  *   if (prog == NULL)
@@ -291,11 +290,11 @@ static void emit_bpf_tail_call(u8 **pprog)
 	EMIT2(X86_JBE, OFFSET1);                  /* jbe out */
 	label1 = cnt;
 
-	/* if (tail_call_cnt > MAX_TAIL_CALL_CNT)
+	/* if (tail_call_cnt > MAX_BPF_TAIL_CALL_CNT)
 	 *   goto out;
 	 */
 	EMIT2_off32(0x8B, 0x85, 36);              /* mov eax, dword ptr [rbp + 36] */
-	EMIT3(0x83, 0xF8, MAX_TAIL_CALL_CNT);     /* cmp eax, MAX_TAIL_CALL_CNT */
+	EMIT3(0x83, 0xF8, MAX_BPF_TAIL_CALL_CNT); /* cmp eax, MAX_BPF_TAIL_CALL_CNT */
 #define OFFSET2 36
 	EMIT2(X86_JA, OFFSET2);                   /* ja out */
 	label2 = cnt;

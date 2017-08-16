@@ -14,7 +14,7 @@
 #include <linux/ppp-comp.h>
 #include <linux/slab.h>
 #ifdef CONFIG_IPPP_FILTER
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #endif
 
 #include "isdn_common.h"

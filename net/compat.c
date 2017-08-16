@@ -19,7 +19,7 @@
 #include <linux/icmpv6.h>
 #include <linux/socket.h>
 #include <linux/syscalls.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/compat.h>
 #include <linux/security.h>
 #include <linux/audit.h>

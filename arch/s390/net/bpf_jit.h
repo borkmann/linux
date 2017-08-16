@@ -12,7 +12,7 @@
 
 #ifndef __ASSEMBLY__
 
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/types.h>
 
 extern u8 sk_load_word_pos[], sk_load_half_pos[], sk_load_byte_pos[];

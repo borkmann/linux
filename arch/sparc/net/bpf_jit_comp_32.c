@@ -1,7 +1,7 @@
 #include <linux/moduleloader.h>
 #include <linux/workqueue.h>
 #include <linux/netdevice.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/cache.h>
 #include <linux/if_vlan.h>
 

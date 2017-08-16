@@ -35,7 +35,6 @@
 
 #include <linux/kernel.h>
 #include <linux/bpf.h>
-#include <linux/filter.h>
 #include <linux/pkt_cls.h>
 #include <linux/unistd.h>
 

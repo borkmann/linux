@@ -1,7 +1,7 @@
 #ifndef _SOCK_REUSEPORT_H
 #define _SOCK_REUSEPORT_H
 
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/skbuff.h>
 #include <linux/types.h>
 #include <net/sock.h>

@@ -28,7 +28,7 @@
 #endif
 
 #ifdef CONFIG_SECCOMP_FILTER
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/pid.h>
 #include <linux/ptrace.h>
 #include <linux/security.h>

@@ -12,7 +12,6 @@
 #include <linux/kernel.h>
 #include <linux/skbuff.h>
 #include <linux/rtnetlink.h>
-#include <linux/filter.h>
 #include <linux/bpf.h>
 
 #include <net/netlink.h>

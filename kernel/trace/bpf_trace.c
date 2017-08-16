@@ -10,7 +10,6 @@
 #include <linux/slab.h>
 #include <linux/bpf.h>
 #include <linux/bpf_perf_event.h>
-#include <linux/filter.h>
 #include <linux/uaccess.h>
 #include <linux/ctype.h>
 #include "trace.h"

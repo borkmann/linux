@@ -32,7 +32,7 @@
 
 #include <linux/debugfs.h>
 #include <linux/crc16.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>

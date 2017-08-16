@@ -19,7 +19,6 @@
 #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
 
 #include <linux/netdevice.h>
-#include <linux/filter.h>
 #include <linux/init.h>
 #include <linux/bpf.h>
 #include <asm/cacheflush.h>
@@ -1013,7 +1012,7 @@ static noinline int bpf_jit_insn(struct bpf_jit *jit, struct bpf_prog *fp, int i
 				  REG_W1, 0, 0xa);
 
 		/*
-		 * if (tail_call_cnt++ > MAX_TAIL_CALL_CNT)
+		 * if (tail_call_cnt++ > MAX_BPF_TAIL_CALL_CNT)
 		 *         goto out;
 		 */
 
@@ -1025,9 +1024,9 @@ static noinline int bpf_jit_insn(struct bpf_jit *jit, struct bpf_prog *fp, int i
 		EMIT4_IMM(0xa7080000, REG_W0, 1);
 		/* laal %w1,%w0,off(%r15) */
 		EMIT6_DISP_LH(0xeb000000, 0x00fa, REG_W1, REG_W0, REG_15, off);
-		/* clij %w1,MAX_TAIL_CALL_CNT,0x2,label0 */
+		/* clij %w1,MAX_BPF_TAIL_CALL_CNT,0x2,label0 */
 		EMIT6_PCREL_IMM_LABEL(0xec000000, 0x007f, REG_W1,
-				      MAX_TAIL_CALL_CNT, 0, 0x2);
+				      MAX_BPF_TAIL_CALL_CNT, 0, 0x2);
 
 		/*
 		 * prog = array->ptrs[index];

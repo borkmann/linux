@@ -6,7 +6,6 @@
  */
 #include <linux/bpf.h>
 #include <linux/jhash.h>
-#include <linux/filter.h>
 #include <linux/stacktrace.h>
 #include <linux/perf_event.h>
 #include "percpu_freelist.h"

@@ -15,7 +15,6 @@
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/skbuff.h>
-#include <linux/filter.h>
 #include <linux/bpf.h>
 
 #include <net/rtnetlink.h>

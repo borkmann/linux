@@ -7,8 +7,7 @@
 #ifndef _LINUX_BPF_VERIFIER_H
 #define _LINUX_BPF_VERIFIER_H 1
 
-#include <linux/bpf.h> /* for enum bpf_reg_type */
-#include <linux/filter.h> /* for MAX_BPF_STACK */
+#include <linux/bpf.h>
 #include <linux/tnum.h>
 
 /* Maximum variable offset umax_value permitted when resolving memory accesses.

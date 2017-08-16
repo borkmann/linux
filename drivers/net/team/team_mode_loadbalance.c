@@ -15,7 +15,7 @@
 #include <linux/errno.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/if_team.h>
 
 static rx_handler_result_t lb_receive(struct team *team, struct team_port *port,

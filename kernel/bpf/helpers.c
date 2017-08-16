@@ -17,7 +17,6 @@
 #include <linux/ktime.h>
 #include <linux/sched.h>
 #include <linux/uidgid.h>
-#include <linux/filter.h>
 
 /* If kernel subsystem is allowing eBPF programs to call this function,
  * inside its own verifier_ops->get_func_proto() callback it should return

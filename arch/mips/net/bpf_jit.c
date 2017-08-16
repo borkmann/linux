@@ -12,7 +12,7 @@
 #include <linux/bitops.h>
 #include <linux/compiler.h>
 #include <linux/errno.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/if_vlan.h>
 #include <linux/moduleloader.h>
 #include <linux/netdevice.h>

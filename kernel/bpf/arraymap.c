@@ -14,7 +14,6 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/mm.h>
-#include <linux/filter.h>
 #include <linux/perf_event.h>
 
 #include "map_in_map.h"

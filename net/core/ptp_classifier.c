@@ -104,7 +104,7 @@
  */
 
 #include <linux/skbuff.h>
-#include <linux/filter.h>
+#include <linux/bpf.h>
 #include <linux/ptp_classify.h>
 
 static struct bpf_prog *ptp_insns __read_mostly;
